@@ -1,0 +1,4 @@
+add_executable(file_sort file_sort.cpp)
+add_executable(file_generator file_generator.cpp)
+target_compile_definitions(file_sort PRIVATE FILESORT_MODE)
+target_compile_definitions(file_generator PRIVATE FILEGENERATOR_MODE)

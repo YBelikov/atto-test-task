@@ -1,0 +1,2 @@
+add_executable(database_cache database_cache.cpp)
+target_compile_definitions(database_cache PRIVATE DATABASE_CACHE_MODE)
