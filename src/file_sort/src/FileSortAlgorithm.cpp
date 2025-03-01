@@ -44,11 +44,9 @@ std::string FileSortAlgorithm::createFileAndSpitData(const std::vector<double>& 
 {
     auto bufferOutputFilePath = buildSortedChunkPath(fileIndex);
     std::ofstream out(bufferOutputFilePath);
-    out << std::fixed << std::setprecision(6);
-    std::cout << std::fixed << std::setprecision(6);
+    out << std::scientific << std::setprecision(5);
     for (const double& value : buffer) 
     {
-        std::cout << "Sorted value: " << value << '\n';
         out << value << '\n';
     }
     return bufferOutputFilePath;
@@ -85,14 +83,15 @@ void FileSortAlgorithm::kWayMerge(const std::vector<std::string>& bufferFiles, c
     std::priority_queue<HeapElement, std::vector<HeapElement>, std::less<HeapElement>> minHeap;
     for (int i = 0; i < sortedChunkStreams.size(); ++i)
     {
-        double value;
-        if (sortedChunkStreams[i]  >> value)
+        std::string line;
+        if (getline(sortedChunkStreams[i], line))
         {
+            double value = std::stod(line);
             minHeap.push(HeapElement(value, i));
-        }
+        }   
     }
     std::ofstream finalOut(outputFile);
-    finalOut << std::fixed << std::setprecision(6);
+    finalOut << std::scientific << std::setprecision(5);
     while(!minHeap.empty())
     {
         HeapElement minElement = minHeap.top();
