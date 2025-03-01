@@ -25,19 +25,24 @@ void FileSortAlgorithm::sortContents(const std::string& inputFilePath, const std
         buffer.push_back(std::stod(value));
         if (buffer.size() >= bufferCapacity)
         {
-            std::sort(buffer.begin(), buffer.end());
-            bufferFiles.push_back(createFileAndSpitData(buffer, fileIndex));
+            processAndStoreChunk(buffer, bufferFiles, fileIndex);
             buffer.clear();
             ++fileIndex;
         }
     }
+    in.close();
     if (!buffer.empty())
     {
-        std::sort(buffer.begin(), buffer.end());
-        bufferFiles.push_back(createFileAndSpitData(buffer, fileIndex));
+        processAndStoreChunk(buffer, bufferFiles, fileIndex);
         buffer.clear();
     }
     kWayMerge(bufferFiles, outputFilePath);
+}
+
+void FileSortAlgorithm::processAndStoreChunk(std::vector<double>& buffer, std::vector<std::string>& bufferFiles, int& fileIndex)
+{
+    std::sort(buffer.begin(), buffer.end());
+    bufferFiles.push_back(createFileAndSpitData(buffer, fileIndex));
 }
 
 std::string FileSortAlgorithm::createFileAndSpitData(const std::vector<double>& buffer, int fileIndex)
@@ -70,9 +75,11 @@ void FileSortAlgorithm::kWayMerge(const std::vector<std::string>& bufferFiles, c
             this->streamIndex = streamIndex;
         };
 
-        bool operator <(const HeapElement& other) const
+        bool operator > (const HeapElement& other) const
         {
-            return data < other.data;
+            // Since I work with fixed precision of 5 digits after a dot
+            // I don't think there should be problems with comparison
+            return data > other.data;
         }
     };
     std::vector<std::ifstream> sortedChunkStreams;
@@ -80,7 +87,7 @@ void FileSortAlgorithm::kWayMerge(const std::vector<std::string>& bufferFiles, c
     {
         sortedChunkStreams.emplace_back(streamFile);
     }
-    std::priority_queue<HeapElement, std::vector<HeapElement>, std::less<HeapElement>> minHeap;
+    std::priority_queue<HeapElement, std::vector<HeapElement>, std::greater<HeapElement>> minHeap;
     for (int i = 0; i < sortedChunkStreams.size(); ++i)
     {
         std::string line;

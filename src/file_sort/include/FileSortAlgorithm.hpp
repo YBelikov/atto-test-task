@@ -5,6 +5,7 @@ class FileSortAlgorithm
 private:
     void kWayMerge(const std::vector<std::string>& bufferFiles, const std::string& outputFile);
     std::string buildSortedChunkPath(int chunkIndex);
+    void processAndStoreChunk(std::vector<double>& buffer, std::vector<std::string>& bufferFiles, int& fileIndex);
     std::string createFileAndSpitData(const std::vector<double>& buffer, int fileIndex);
     const std::string SORTED_CHUNKS_STORAGE_DIR = "/tmp";
     int mSortingBufferSize;
