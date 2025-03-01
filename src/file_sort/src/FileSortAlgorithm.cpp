@@ -4,13 +4,11 @@
 #include <stdio.h>
 #include "FileSortAlgorithm.hpp"
 
-FileSortAlgorithm::FileSortAlgorithm(int sortingBufferSize) :  mSortingBufferSize { sortingBufferSize } {}
-
 void FileSortAlgorithm::sortContents(const std::string& inputFilePath, const std::string& outputFilePath) 
 {
     std::vector<double> buffer;
     std::vector<std::string> bufferFiles;
-    int bufferCapacity = mSortingBufferSize / sizeof(double);
+    int bufferCapacity = SORTED_BUFFER_SIZE / sizeof(double);
     buffer.reserve(bufferCapacity);
     std::ifstream in(inputFilePath);
     if (!in) 
