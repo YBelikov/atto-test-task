@@ -1,3 +1,6 @@
+#ifndef LRUCACHE
+#define LRUCACHE
+
 #include <string>
 #include <map>
 #include <list>
@@ -16,3 +19,5 @@ private:
     int mCapacity;
     std::unordered_map<std::string, std::string> cache;
 };
+
+#endif

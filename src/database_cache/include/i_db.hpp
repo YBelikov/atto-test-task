@@ -1,3 +1,6 @@
+#ifndef I_DB 
+#define I_DB
+
 #include <string>
 #include <unordered_set>
 #include <shared_mutex>
@@ -35,3 +38,5 @@ private:
     LRUCache mCache;
     std::unordered_map<std::string, std::string> mStorage; // Dummy backend since we don't have any "real" database here
 };
+
+#endif

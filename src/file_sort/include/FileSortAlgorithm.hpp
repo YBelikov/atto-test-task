@@ -1,3 +1,6 @@
+#ifndef FILESORTALGORITHM
+#define FILESORTALGORITHM
+
 #include <string>
 
 class FileSortAlgorithm
@@ -19,3 +22,5 @@ private:
     
     const int SORTED_BUFFER_SIZE = 80 * 1e6; // bytes in 80 MB
 };
+
+#endif
