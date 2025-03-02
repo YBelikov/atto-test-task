@@ -33,8 +33,6 @@ public:
 private:
     TransactionState mTransactionState;
     std::shared_mutex mTransactionMutex; // I am trying to do reader-writer lock (concept I am familiar from Swift)
-    std::unique_lock<std::shared_mutex> mWriterLock;
-    std::shared_lock<std::shared_mutex> mReaderLock;
     LRUCache mCache;
     std::unordered_map<std::string, std::string> mStorage; // Dummy backend since we don't have any "real" database here
 };
