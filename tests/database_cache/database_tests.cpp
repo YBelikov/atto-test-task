@@ -3,19 +3,19 @@
 #include <chrono>
 #include "i_db.hpp"
 
-class DatabaseCacheTest : public ::testing::Test {
+class DatabaseInterfaceTest : public ::testing::Test {
 protected:
     i_db db{5}; // cache size = 5
 };
 
-TEST_F(DatabaseCacheTest, BasicSetGet) {
+TEST_F(DatabaseInterfaceTest, BasicSetGet) {
     db.begin_transaction();
     EXPECT_EQ(db.set("A", "Hello"), "OK (Pending transaction)");
     db.commit_transaction();
     EXPECT_EQ(db.get("A"), "Hello");
 }
 
-TEST_F(DatabaseCacheTest, CacheUpdate) {
+TEST_F(DatabaseInterfaceTest, CacheUpdate) {
     db.begin_transaction();
     db.set("X", "FirstValue");
     EXPECT_EQ(db.get("X"), "FirstValue");
@@ -25,7 +25,7 @@ TEST_F(DatabaseCacheTest, CacheUpdate) {
     db.commit_transaction();
 }
 
-TEST_F(DatabaseCacheTest, TransactionCommit) {
+TEST_F(DatabaseInterfaceTest, TransactionCommit) {
     db.begin_transaction();
     db.set("T", "PendingValue");
     EXPECT_EQ(db.get("T"), "PendingValue");
@@ -34,7 +34,7 @@ TEST_F(DatabaseCacheTest, TransactionCommit) {
     EXPECT_EQ(db.get("T"), "PendingValue");  // Value should persist
 }
 
-TEST_F(DatabaseCacheTest, TransactionRollback) {
+TEST_F(DatabaseInterfaceTest, TransactionRollback) {
     db.begin_transaction();
     db.set("T", "TemporaryValue");
     EXPECT_EQ(db.get("T"), "TemporaryValue");
@@ -43,7 +43,7 @@ TEST_F(DatabaseCacheTest, TransactionRollback) {
     EXPECT_EQ(db.get("T"), "");  // Value should NOT persist
 }
 
-TEST_F(DatabaseCacheTest, ConcurrentAccess) {
+TEST_F(DatabaseInterfaceTest, ConcurrentAccess) {
     db.begin_transaction();
     std::thread writer([&]() {
         for (int i = 0; i < 10; i++) {
@@ -64,7 +64,7 @@ TEST_F(DatabaseCacheTest, ConcurrentAccess) {
     EXPECT_EQ(db.get("Key5"), "Value5");  // Verify concurrent access
 }
 
-TEST_F(DatabaseCacheTest, RemoveKey) {
+TEST_F(DatabaseInterfaceTest, RemoveKey) {
     db.begin_transaction();
     db.set("DelKey", "ToDelete");
     db.commit_transaction();
@@ -75,7 +75,7 @@ TEST_F(DatabaseCacheTest, RemoveKey) {
     EXPECT_EQ(db.get("DelKey"), "");  // Should be removed
 }
 
-TEST_F(DatabaseCacheTest, RemoveInTransaction) {
+TEST_F(DatabaseInterfaceTest, RemoveInTransaction) {
     db.begin_transaction();
     db.set("TempKey", "Persisted");
     db.commit_transaction();
@@ -88,7 +88,7 @@ TEST_F(DatabaseCacheTest, RemoveInTransaction) {
     EXPECT_EQ(db.get("TempKey"), "Persisted");  // Rollback should restore value
 }
 
-TEST_F(DatabaseCacheTest, RemoveCommit) {
+TEST_F(DatabaseInterfaceTest, RemoveCommit) {
     db.begin_transaction();
     db.set("RemKey", "SomeValue");
     db.commit_transaction();
@@ -100,7 +100,7 @@ TEST_F(DatabaseCacheTest, RemoveCommit) {
     EXPECT_EQ(db.get("RemKey"), "");  // Should be deleted after commit
 }
 
-TEST_F(DatabaseCacheTest, CacheEviction) {
+TEST_F(DatabaseInterfaceTest, CacheEviction) {
     db.begin_transaction();
     db.set("1", "One");
     db.set("2", "Two");
@@ -114,7 +114,7 @@ TEST_F(DatabaseCacheTest, CacheEviction) {
     EXPECT_EQ(db.get("6"), "Six");  // "6" should be in cache
 }
 
-TEST_F(DatabaseCacheTest, MultipleSetSameKey) {
+TEST_F(DatabaseInterfaceTest, MultipleSetSameKey) {
     db.begin_transaction();
     db.set("A", "Value1");
     db.set("A", "Value2");
@@ -125,7 +125,7 @@ TEST_F(DatabaseCacheTest, MultipleSetSameKey) {
     EXPECT_EQ(db.get("A"), "Value3");  // Ensure final value persists
 }
 
-TEST_F(DatabaseCacheTest, MultipleRemoveSameKey) {
+TEST_F(DatabaseInterfaceTest, MultipleRemoveSameKey) {
     db.begin_transaction();
     db.set("B", "ToBeDeleted");
     db.commit_transaction();
@@ -139,7 +139,7 @@ TEST_F(DatabaseCacheTest, MultipleRemoveSameKey) {
     EXPECT_EQ(db.get("B"), "");  // Should remain deleted
 }
 
-TEST_F(DatabaseCacheTest, RemoveBeforeSet) {
+TEST_F(DatabaseInterfaceTest, RemoveBeforeSet) {
     db.begin_transaction();
     db.remove("C");  // Remove before setting
     db.set("C", "NewValue");
@@ -149,7 +149,7 @@ TEST_F(DatabaseCacheTest, RemoveBeforeSet) {
     EXPECT_EQ(db.get("C"), "NewValue");  // Should persist
 }
 
-TEST_F(DatabaseCacheTest, SetRemoveSameKeyInTransaction) {
+TEST_F(DatabaseInterfaceTest, SetRemoveSameKeyInTransaction) {
     db.begin_transaction();
     db.set("D", "IntermediateValue");
     EXPECT_EQ(db.get("D"), "IntermediateValue");
@@ -164,7 +164,7 @@ TEST_F(DatabaseCacheTest, SetRemoveSameKeyInTransaction) {
     EXPECT_EQ(db.get("D"), "FinalValue");  // Ensure final value persists
 }
 
-TEST_F(DatabaseCacheTest, RollbackMultipleChanges) {
+TEST_F(DatabaseInterfaceTest, RollbackMultipleChanges) {
     db.begin_transaction();
     db.set("E", "ValueE");
     db.set("F", "ValueF");
@@ -184,7 +184,7 @@ TEST_F(DatabaseCacheTest, RollbackMultipleChanges) {
     EXPECT_EQ(db.get("H"), "");  // Should NOT exist
 }
 
-TEST_F(DatabaseCacheTest, ConsecutiveTransactionsModifySameKey) {
+TEST_F(DatabaseInterfaceTest, ConsecutiveTransactionsModifySameKey) {
     db.begin_transaction();
     db.set("Z", "Transaction1");
     db.commit_transaction();
