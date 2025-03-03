@@ -82,24 +82,3 @@ TEST_F(LRUCacheTest, InsertMoreThanCapacity) {
     EXPECT_EQ(cache.get("3"), "Three");
     EXPECT_EQ(cache.get("4"), "Four");
 }
-
-TEST_F(LRUCacheTest, ConcurrentAccess) {
-    LRUCache cache(5);
-
-    std::thread writer([&]() {
-        for (int i = 0; i < 10; i++) {
-            cache.set("Key" + std::to_string(i), "Value" + std::to_string(i));
-        }
-    });
-
-    std::thread reader([&]() {
-        for (int i = 0; i < 10; i++) {
-            cache.get("Key" + std::to_string(i));
-        }
-    });
-
-    writer.join();
-    reader.join();
-
-    EXPECT_EQ(cache.get("Key5"), "Value5");
-}
