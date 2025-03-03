@@ -3,7 +3,9 @@
 <h4> Requirements </h4>
 
 **Unix-based OS**: I tested on macOS Sequoia and Alma Linux
+
 **CMake** 3.15+
+
 **Compiler capable of supporting C++17**
 
 I have played with CMake bit for this task and structured the prject accordingly.
@@ -18,78 +20,118 @@ In short, it has following targets:
 <h2> How to build and how to run </h2>
 
 1. Clone a repo
-2. Go to repo dir: cd att-test-task
-3. Create and enter a build dir: mkdir build && cd build
-4. Generate build files: cmake ..
+2. Go to repo dir: ```cd atto-test-task```
+3. Create and enter a build dir: ```mkdir build && cd build```
+4. Generate build files: ```cmake ..```
 5. Enter build directory: cd build
-6. Build a target: cmake --build . --target <target name> (one of the listed targets above)
-7. Under this conditions a built binary lands into build/src/file_sort/ (for file_sort and file_generator targers) and in build/src/database_cache (for database_cache and database_cache_lib targers)
-8. Unit tests test_lru_cache binary land into build/tests/database_cache directory
+6. Build a target: ```cmake --build . --target <target name>``` (one of the listed targets above)
+7. Under this conditions a built binary lands into ```build/src/file_sort/``` (for file_sort and file_generator targers) and in ```build/src/database_cache``` (for database_cache and database_cache_lib targers)
+8. Unit tests ```test_lru_cache``` binary land into ```build/tests/database_cache directory```
 
 Running a program is just launching a binary.
-For file_generator target run (assuming you are in build directory): file_generator \<full to the intended path of generation\>. Example: file_generator "/Users/user/test_file.txt"
 
-For file_sort target run: file_sort \<path to an unsorted file\> \<path to the sorted file\>. Example: file_sort "/Users/user/test_file.txt" "/Users/user/sorted_file.txt"
+**For file_generator target run (assuming you are in build directory):** ```file_generator <full to the intended path of generation>```. 
+**Example:** ```file_generator "/Users/user/test_file.txt"```
 
-For test_lru_cache just run the binary itself. Example: ./test_lru_cache
+**For file_sort target run:** ```file_sort <path to an unsorted file> <path to the sorted file>```. 
+**Example:** ```file_sort "/Users/user/test_file.txt" "/Users/user/sorted_file.txt"```
+
+**For test_lru_cache just run the binary itself. Example:** ```./test_lru_cache```
 
 <h2> How it works </h2>
 
 <h4>File generator</h4> 
 
-For the file generation I decided to generate separately mantissa and exponent and combine them into a a double of scientific representation. 
-I made calculating the output data size a bit brute force. Since we are spitting numbers in a resulting file I just generate a number put it in a string and calculate
-the size of the string including new line character. The sum of the sizes of all generated string representations should be 1e9 bytes (bytes in GB).
+For file generation, I decided to generate the mantissa and exponent separately and then combine them into a double using scientific notation.  
 
-For file sorting I choose external sorting approach + K-way merge. Since the file is 1GB in size I can't load all the contents in memory. Consequently I have to process data in chunks.
-There were no explicit requirements on hard drive utilization (I hope "memory" requirement didn't impose that I am prohibites to use more than 100MB of hard drive as well). 
-To cope with data this big I decided to:
-1. Read doubles from a file in 80MB buffer.
-2. Sort numbers when a buffer is full
-3. Put the sorted numbers in temporary text in "/tmp" folder (I tested on Unix-based systems, so Windows was not my consideration)
+Calculating the output data size was done in a somewhat brute-force manner. Since the resulting file consists of numbers, I generate a number, convert it to a string, and measure the string's size, including the newline character. The sum of all generated string representations should add up to **1 GB (1e9 bytes).**  
 
-When all the data from the input file is processed start merging temporary files
-1. Read first numbers from each temp file
-2. Put those numbers in a min-heap
-3. Took a minimun out of a heap together with an associated index of input stream in the corresponding array in the program
-4. Write this min double into an output file
-5. Read the next number from the deduced stream
-6. Repeat steps 1-4 until all temp files contents are processed
-7. Remove all temporary files from the filesystem.
+For sorting the file, I chose an **external sorting approach with K-way merge.** Since the file size is **1 GB**, it cannot be fully loaded into memory, so the data must be processed in chunks.  
 
-The current implementation imposes quite an overhead on CPU but satisfies RAM requiremens (I didn't manage to allocate enough time to reevaluate CPU performance).
-On the tested systems memory utilization never spiked higher than 80MB for my tests. However, the test machine has to have enough hard drive memory for temporary files.
+There were no explicit constraints regarding **hard drive utilization** (I assumed the "memory" requirement did not imply that I was prohibited from using more than 100 MB of disk space).  
 
-<h4>Database cache</h4>
-So I had three requirements:
-1. Transaction-based implementation
-2. Multithreading support
-3. Caching
+To handle large data efficiently, I followed this approach:
 
-I wasn't sure how to properly approach this task so I decided to implement the provided interface integrating transaction, cache and multithreading support.
-Also I had doubts how to define one transaction: could it be only one modification operation or it could be several? Different software may have own definitions of "transaction". 
-I sticked to the second option: a chain of set/remove operations count as one transaction until commit_transaction is called. Get query may be called in any time - I am still not sure 
-how right I was regarding this decision since during a transaction I have to decide which data to return if a user queries the key modified during an opened but not commited transaction
-(if the value for a key was set but not commited should get() return in-transaction or pre-transaction data? I sticked to **in-transaction** option).
+1. Read doubles from the file into an **80 MB buffer**.
+2. Sort the numbers once the buffer is full.
+3. Store the sorted numbers in temporary text files in the **`/tmp`** directory (tested on Unix-based systems, Windows support was not a priority).
 
-I implemented a transaction state struct that tracks the actual state of transaction (whether it is active or not), pending updates to the database: which keys were set to which values
-and which keys were removed during a transaction. Get queries just go straight through the transaction data (for freshly set fields), through the cache or the "internal storage". 
-This way aborting transaction is just ignoring and clearing the data about set and removed keys. Commiting transaction is just merging the data into cache and internal storage.
+Once all input data is processed, the merging phase begins:
 
-To support caching I tried implementing a straighforward LRU cache. I have given it the capacity of 5 elements (not an impressive number but it is easier to test).
-Since LRU kicks out the least used element when sets new value it is a good combination of space and space efficiency + I it was the first time I tried implementing it in C++.
-Since database interface provides synchronization logic I wasn't adding multithreading support for the cache, consequently it is not safe to utilize the cache separately under such conditions.
+1. Read the first number from each temporary file.
+2. Insert these numbers into a **min-heap**.
+3. Extract the **minimum** from the heap and retrieve the corresponding input stream index.
+4. Write this minimum value into the output file.
+5. Read the next number from the same input stream.
+6. Repeat steps **3–5** until all temporary files are fully processed.
+7. Delete all temporary files.
 
-Regarding multhithreading support I tried sticking to reader-writer model: something I am familiar with in Swift but not really in C++. 
-Anyways it was interesting to try: I used std::unique_lock for write(set, remove) operations and std::shared_lock for read (get). This way any number of
-threads can read database but only one thread at a time is capable of writing data there.
+The current implementation imposes a significant **CPU overhead** but adheres to memory constraints. I haven't had time to optimize CPU performance further.  
 
-To test all this I tried implementing a couple of unit tests using GTest. All tests remain in test_lru_cache target and there are two test suits:
-1. **DatabaseInterfaceTest**. Covers various cases for database manipulation: transaction rollback, multithreading support, prohibtion of changes before transaction is opened, basic operations
-2. **LRUCacheTest**. Covers basic caching, cache eviction.
+On tested systems, **memory usage never exceeded 80 MB**. However, the test machine must have **sufficient disk space** for temporary files.
 
-I am still not sure how right I was regarding the definition of transaction: multiple operations during one transaction may grow the transaction state to a quite big size, so that's my concern.
+## Database Cache
 
-In general that was a fun test, there are a still points to improve, so maybe I will continue with this tasks independently of the feedback :)
+I focused on three key requirements:
 
+1. **Transaction-based implementation**
+2. **Multithreading support**
+3. **Caching**
 
+I wasn't entirely sure how to approach this task, so I implemented the provided interface, integrating **transactions, caching, and multithreading support.**  
+
+One question I had was how to define a **"transaction"**: should it consist of a single modification operation, or could it include multiple operations? Since different software may interpret transactions differently, I chose the latter:  
+**A transaction consists of multiple `set` and `remove` operations until `commit_transaction` is called.**  
+
+**`get()` queries can be made at any time**, but I was unsure what data to return if a key was modified during an ongoing (but uncommitted) transaction. Should `get()` return the **in-transaction** or **pre-transaction** value? I opted for the **in-transaction** value.
+
+To manage transaction states, I implemented a **transaction state struct**, which tracks:
+
+- Whether a transaction is active
+- Pending database updates (keys set/removed within the transaction)
+
+`get()` queries check:
+
+1. The **transaction state** (for freshly set values)
+2. The **cache**
+3. The **internal storage**  
+
+This approach makes transaction rollbacks simple—just discard pending updates. **Committing** a transaction merges its data into the cache and internal storage.
+
+### Caching Implementation
+
+For caching, I implemented a **basic LRU cache** with a **capacity of 5 elements** (small but sufficient for testing).  
+It balances space efficiency and performance by evicting the **least recently used** element when inserting new values. This was also my first time implementing an LRU cache in **C++**, so it was a learning experience.
+
+Since the **database interface already handles synchronization**, I did **not** add explicit multithreading support for the cache. As a result, the cache **is not thread-safe** if used independently.
+
+### Multithreading Support
+
+For **multithreading**, I followed a **reader-writer model**—something I'm familiar with in **Swift** but not as much in **C++**.  
+
+- **`get()` operations** use `std::shared_lock` - allowing **multiple threads** to read simultaneously.
+- **`set()` and `remove()` operations** use `std::unique_lock` - ensuring **only one writer** at a time.
+
+This approach allows for high concurrency while maintaining data integrity.
+
+### Unit Testing
+
+To validate my implementation, I wrote **unit tests** using **Google Test (GTest)**.  
+
+There are **two test suites**:
+
+1. **`DatabaseInterfaceTest`**  
+   - Tests database operations, including:
+     - Transaction rollbacks
+     - Multithreading behavior
+     - Restrictions on modifications before a transaction starts
+     - Basic CRUD operations  
+
+2. **`LRUCacheTest`**  
+   - Tests **cache behavior**:
+     - Caching logic
+     - Cache eviction when full
+
+I'm still unsure about my **transaction design choice**—allowing multiple operations within a transaction could lead to **large transaction states**, which might be a concern.  
+
+Overall, this was a **fun challenge**! There’s still room for improvement, so I might continue refining it regardless of feedback :)
