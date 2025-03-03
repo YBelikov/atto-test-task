@@ -25,11 +25,11 @@ public:
     void set(const std::string& key, const std::string& value);
     std::string get(const std::string& key);
     void remove(const std::string& key);
+    void clear();
 
 private:
     void moveToFront(const std::list<CacheEntry>::iterator& it);
     void removeLastUsed();
-    void clear();
 
     int mCapacity;
     std::unordered_map<std::string, std::list<CacheEntry>::iterator> mEntries;

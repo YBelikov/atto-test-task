@@ -1,5 +1,5 @@
 find_package(GTest REQUIRED)
-add_executable(test_lru_cache test_lru_cache.cpp)
+add_executable(test_lru_cache database_tests.cpp lru_cache_tests.cpp)
 
 include_directories(${PROJECT_SOURCE_DIR}/src/database_cache/include)
 target_compile_definitions(test_lru_cache PRIVATE TEST_LRU_CACHE_MODE)
